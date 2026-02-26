@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/auth';
-import pool from '@edenschool/common/db';
+import pool from '@kaca/common/db';
 import type { RowDataPacket } from 'mysql2';
 
 /** GET: 저장된 HWPX 파일 다운로드 */
@@ -16,7 +16,7 @@ export async function GET(
   const { id } = await params;
 
   const [rows] = await pool.execute<RowDataPacket[]>(
-    `SELECT title, hwpx_blob FROM kaca.generation_history WHERE id = ? AND user_id = ?`,
+    `SELECT title, hwpx_blob FROM generation_history WHERE id = ? AND user_id = ?`,
     [id, session.user.id]
   );
 

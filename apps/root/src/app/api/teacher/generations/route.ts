@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/auth';
-import pool from '@edenschool/common/db';
+import pool from '@kaca/common/db';
 import { buildHwpx } from '@/lib/hwpx-builder';
+import { parseQuestionTypes } from '@/lib/question-type-parser';
 import type { RowDataPacket } from 'mysql2';
 
 /** POST: 생성 결과 + HWPX 저장 */
@@ -30,6 +31,10 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: '필수 필드가 누락되었습니다.' }, { status: 400 });
   }
 
+  // 문제 유형 파싱
+  const questionTypes = parseQuestionTypes(body.generatedText);
+  const questionTypesJson = questionTypes.length > 0 ? JSON.stringify(questionTypes) : null;
+
   // HWPX 생성 시도 (실패해도 텍스트는 저장)
   let hwpxBuffer: Buffer | null = null;
   try {
@@ -39,9 +44,9 @@ export async function POST(req: NextRequest) {
   }
 
   const [result] = await pool.execute(
-    `INSERT INTO kaca.generation_history
-      (user_id, category, title, generated_text, request_params, difficulty, question_count, template, hwpx_blob)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    `INSERT INTO generation_history
+      (user_id, category, title, generated_text, request_params, difficulty, question_count, question_types, template, hwpx_blob)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     [
       session.user.id,
       body.category,
@@ -50,6 +55,7 @@ export async function POST(req: NextRequest) {
       body.requestParams ? JSON.stringify(body.requestParams) : null,
       body.difficulty || '중',
       body.questionCount || 3,
+      questionTypesJson,
       body.template || 'SAMPLE',
       hwpxBuffer,
     ]
@@ -67,9 +73,9 @@ export async function GET() {
   }
 
   const [rows] = await pool.execute<RowDataPacket[]>(
-    `SELECT id, category, title, difficulty, question_count, template,
+    `SELECT id, category, title, difficulty, question_count, question_types, template,
             hwpx_blob IS NOT NULL AS has_hwpx, created_at
-     FROM kaca.generation_history
+     FROM generation_history
      WHERE user_id = ?
      ORDER BY created_at DESC
      LIMIT 100`,

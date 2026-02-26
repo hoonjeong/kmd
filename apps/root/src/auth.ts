@@ -3,7 +3,7 @@ import Google from 'next-auth/providers/google';
 import Kakao from 'next-auth/providers/kakao';
 import Credentials from 'next-auth/providers/credentials';
 import { compare } from 'bcryptjs';
-import pool from '@edenschool/common/db';
+import pool from '@kaca/common/db';
 import { MySQLAdapter } from '@/lib/auth-adapter';
 import type { RowDataPacket } from 'mysql2';
 
@@ -37,7 +37,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         if (!email || !password) return null;
 
         const [rows] = await pool.execute<AuthUserRow[]>(
-          'SELECT * FROM kaca.auth_user WHERE email = ?',
+          'SELECT * FROM auth_user WHERE email = ?',
           [email]
         );
         const user = rows[0];
@@ -64,12 +64,16 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         token.role = user.role;
         token.rememberMe = user.rememberMe ?? true;
       } else if (token.id) {
-        // 매 요청마다 DB에서 최신 role을 반영
-        const [rows] = await pool.execute<AuthUserRow[]>(
-          'SELECT role FROM kaca.auth_user WHERE id = ?',
-          [token.id]
-        );
-        if (rows[0]) token.role = rows[0].role;
+        // 매 요청마다 DB에서 최신 role을 반영 (DB 실패 시 기존 role 유지)
+        try {
+          const [rows] = await pool.execute<AuthUserRow[]>(
+            'SELECT role FROM auth_user WHERE id = ?',
+            [token.id]
+          );
+          if (rows[0]) token.role = rows[0].role;
+        } catch {
+          // DB 연결 실패 시 기존 token.role 유지
+        }
       }
       return token;
     },

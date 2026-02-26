@@ -1,12 +1,12 @@
 import { NextRequest } from 'next/server';
 import { requireAdminApiSession } from '@/lib/admin-session';
-import { selectLiteraturePassageSets } from '@edenschool/common/queries/literature';
+import { searchLiterature, selectLiteratureFileContent } from '@kaca/common/queries/literature';
 
 interface RequestBody {
   title?: string;
   author?: string;
-  subCategories?: string[];
-  questionPatterns?: string[];
+  grade?: string;
+  publisher?: string;
 }
 
 export async function POST(req: NextRequest) {
@@ -30,19 +30,30 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    const passageSets = await selectLiteraturePassageSets({
+    const metas = await searchLiterature({
       title: body.title,
       author: body.author,
-      subCategories: body.subCategories,
-      questionPatterns: body.questionPatterns,
-      passageLimit: 2,
+      grade: body.grade,
+      publisher: body.publisher,
+      limit: 5,
     });
 
-    return new Response(JSON.stringify({ passageSets }), {
+    // 각 메타에 대해 파일 내용 조회
+    const results = [];
+    for (const meta of metas) {
+      const file = await selectLiteratureFileContent(meta.id);
+      results.push({
+        meta,
+        fileContent: file ? (typeof file.content === 'string' ? file.content : null) : null,
+        fileName: file?.fileName || null,
+      });
+    }
+
+    return new Response(JSON.stringify({ results }), {
       headers: { 'Content-Type': 'application/json' },
     });
   } catch (err) {
-    const message = err instanceof Error ? err.message : '문항 검색에 실패했습니다.';
+    const message = err instanceof Error ? err.message : '검색에 실패했습니다.';
     return new Response(JSON.stringify({ error: message }), {
       status: 500,
       headers: { 'Content-Type': 'application/json' },

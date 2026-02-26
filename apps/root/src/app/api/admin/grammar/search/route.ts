@@ -1,11 +1,11 @@
 import { NextRequest } from 'next/server';
 import { requireAdminApiSession } from '@/lib/admin-session';
-import { searchGrammarFiles, countGrammarFiles } from '@edenschool/common/queries/grammar';
+import { countGrammarBySubCategory } from '@kaca/common/queries/grammar';
 
 interface RequestBody {
   keyword?: string;
-  limit?: number;
-  offset?: number;
+  grade?: string;
+  publisher?: string;
 }
 
 export async function POST(req: NextRequest) {
@@ -29,13 +29,12 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    const keyword = body.keyword?.trim() || '';
-    const [files, totalCount] = await Promise.all([
-      keyword ? searchGrammarFiles(keyword, body.limit || 20, body.offset || 0) : Promise.resolve([]),
-      countGrammarFiles(keyword || undefined),
-    ]);
+    const keyword = body.keyword?.trim() || undefined;
+    const grade = body.grade?.trim() || undefined;
+    const publisher = body.publisher?.trim() || undefined;
+    const totalCount = await countGrammarBySubCategory(keyword, grade, publisher);
 
-    return new Response(JSON.stringify({ files, totalCount }), {
+    return new Response(JSON.stringify({ totalCount }), {
       headers: { 'Content-Type': 'application/json' },
     });
   } catch (err) {

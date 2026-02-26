@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAdminApiSession } from '@/lib/admin-session';
 import { withErrorHandler } from '@/lib/api-handler';
-import { selectPrevTestFileInfoByInfoIds } from '@edenschool/common/queries/prev-test';
+import { selectPrevTestFileInfoByInfoIds } from '@kaca/common/queries/prev-test';
 import JSZip from 'jszip';
 
 export const POST = withErrorHandler(async (req: NextRequest) => {

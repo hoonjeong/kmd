@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import pool from '@edenschool/common/db';
+import pool from '@kaca/common/db';
 import type { RowDataPacket } from 'mysql2';
 
 export async function POST(req: Request) {
@@ -13,7 +13,7 @@ export async function POST(req: Request) {
     const normalized = phone.replace(/-/g, '');
 
     const [rows] = await pool.execute<RowDataPacket[]>(
-      'SELECT email FROM kaca.auth_user WHERE phone = ? LIMIT 1',
+      'SELECT email FROM auth_user WHERE phone = ? LIMIT 1',
       [normalized]
     );
 

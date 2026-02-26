@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { requireAdminSession } from '@/lib/admin-session';
-import pool from '@edenschool/common/db';
+import pool from '@kaca/common/db';
 
 interface PrevTestRow {
   id: number;

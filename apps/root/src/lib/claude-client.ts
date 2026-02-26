@@ -1,9 +1,4 @@
 import Anthropic from '@anthropic-ai/sdk';
-import type { ExamQuestionWithChoices } from '@edenschool/common';
-import type { PassageSet } from '@edenschool/common/queries/passage-question';
-import type { LiteraturePassageSet } from '@edenschool/common/queries/literature';
-import type { ReadingPassageSet } from '@edenschool/common/queries/reading';
-import { CIRCLED_NUMBERS } from './constants';
 
 let client: Anthropic | null = null;
 
@@ -30,24 +25,6 @@ const VARIANT_DIFFICULTY_GUIDE: Record<string, string> = {
   harder: '원본보다 약간 어려운 수준으로, 심화 사고력을 요구하는 방향으로',
 };
 
-// ── 참고문항 포맷팅 헬퍼 ──
-function formatReferenceQuestions(questions: ExamQuestionWithChoices[], max = 3): string {
-  let section = '';
-  for (const q of questions.slice(0, max)) {
-    section += `- 유형: ${q.questionPattern || q.category || ''}\n`;
-    section += `- 문제: ${q.questionText}\n`;
-    if (q.choices && q.choices.length > 0) {
-      section += q.choices
-        .map(c => `  ${CIRCLED_NUMBERS[c.choiceNumber - 1] || c.choiceNumber} ${c.choiceText}`)
-        .join('\n') + '\n';
-    }
-    if (q.answer) section += `- 정답: ${q.answer}\n`;
-    if (q.explanation) section += `- 해설: ${q.explanation}\n`;
-    section += '\n';
-  }
-  return section;
-}
-
 // ── 공통 출력 형식 ──
 const COMMON_OUTPUT_FORMAT = `## 출력 형식
 
@@ -72,6 +49,7 @@ const COMMON_OUTPUT_FORMAT = `## 출력 형식
 ⑤ 선택지5
 
 **정답**: ①
+**유형**: LIT_EXPRESSION (표현/서술특징)
 **해설**: 해설 내용
 
 ---
@@ -92,9 +70,19 @@ const COMMON_OUTPUT_FORMAT = `## 출력 형식
 ⑤ 선택지5
 
 **정답**: ②
+**유형**: GRAM_MORPH (형태소/단어)
 **해설**: 해설 내용
 
 ---
+
+## 유형 코드 참조
+
+각 문제의 **유형** 태그에는 아래 코드 중 하나를 사용하세요:
+
+- 문학: LIT_EXPRESSION(표현/서술특징), LIT_CONTENT(내용이해), LIT_SPEAKER(화자의태도), LIT_MEANING(시어/구절의미), LIT_BOGI(보기감상), LIT_CHARACTER(인물파악), LIT_COMPARE(작품비교), LIT_FUNCTION(소재/배경기능), LIT_CRITICISM(외적준거감상)
+- 독서: READ_MATCH(내용일치), READ_DETAIL(세부정보), READ_STRUCTURE(전개방식), READ_INFER(추론), READ_APPLY(적용), READ_COMPARE(비교대조), READ_VOCAB(어휘), READ_AUTHOR(필자관점), READ_LOGIC(논리추론)
+- 문법: GRAM_PHONOL(음운), GRAM_MORPH(형태소/단어), GRAM_SYNTAX(문장구조), GRAM_EXPR(문장표현), GRAM_HISTORY(국어사), GRAM_ORTHO(맞춤법/표기), GRAM_DISCOURSE(담화)
+- 화작: HW_SPEAK_METHOD(말하기방식), HW_SPEAK_CONTENT(화법내용이해), HW_LISTENER(청자반응), HW_PLAN(글쓰기계획), HW_MATERIAL(자료활용), HW_REVISION(고쳐쓰기), HW_CONDITION(조건표현), HW_MEDIA(매체)
 
 ## 주의사항
 - 참고 문항을 그대로 복사하지 말고 변형하세요
@@ -162,6 +150,7 @@ export function buildVariantQuestionPrompt(
 ⑤ 선택지5
 
 **정답**: ①
+**유형**: LIT_EXPRESSION (표현/서술특징)
 **해설**: 해설 내용
 
 ### [번호]. (문제 질문 내용)
@@ -177,6 +166,7 @@ export function buildVariantQuestionPrompt(
 ⑤ 선택지5
 
 **정답**: ③
+**유형**: LIT_BOGI (보기감상)
 **해설**: 해설 내용
 
 ---
@@ -197,9 +187,18 @@ export function buildVariantQuestionPrompt(
 ⑤ 선택지5
 
 **정답**: ②
+**유형**: GRAM_MORPH (형태소/단어)
 **해설**: 해설 내용
 
 ---
+
+## 유형 코드 참조
+
+각 문제의 **유형** 태그에는 문제 유형에 맞는 코드를 사용하세요:
+- 문학: LIT_EXPRESSION(표현/서술특징), LIT_CONTENT(내용이해), LIT_SPEAKER(화자의태도), LIT_MEANING(시어/구절의미), LIT_BOGI(보기감상), LIT_CHARACTER(인물파악), LIT_COMPARE(작품비교), LIT_FUNCTION(소재/배경기능), LIT_CRITICISM(외적준거감상)
+- 독서: READ_MATCH(내용일치), READ_DETAIL(세부정보), READ_STRUCTURE(전개방식), READ_INFER(추론), READ_APPLY(적용), READ_COMPARE(비교대조), READ_VOCAB(어휘), READ_AUTHOR(필자관점), READ_LOGIC(논리추론)
+- 문법: GRAM_PHONOL(음운), GRAM_MORPH(형태소/단어), GRAM_SYNTAX(문장구조), GRAM_EXPR(문장표현), GRAM_HISTORY(국어사), GRAM_ORTHO(맞춤법/표기), GRAM_DISCOURSE(담화)
+- 화작: HW_SPEAK_METHOD(말하기방식), HW_SPEAK_CONTENT(화법내용이해), HW_LISTENER(청자반응), HW_PLAN(글쓰기계획), HW_MATERIAL(자료활용), HW_REVISION(고쳐쓰기), HW_CONDITION(조건표현), HW_MEDIA(매체)
 
 ## 참고사항
 - 하나의 지문에서 여러 문제를 출제할 경우, 반드시 "[시작~끝] 다음을 읽고 물음에 답하시오." 형식의 범위 안내문을 사용하세요.
@@ -214,230 +213,52 @@ export function buildVariantQuestionPrompt(
 ${text}`;
 }
 
-// ── 기출 기반 문제생성 프롬프트 ──
-export interface ExamQuestionPromptOptions {
-  categories?: string[];
-  subCategories?: string[];
-  questionPatterns?: string[];
-  keyword?: string;
-  difficulty: string;
-  count: number;
-  userNotes?: string;
-}
-
-export function buildExamQuestionPrompt(
-  passageSets: PassageSet[],
-  options: ExamQuestionPromptOptions
-): string {
-  const { categories, subCategories, questionPatterns, keyword, difficulty, count, userNotes } = options;
-
-  const referenceSections = passageSets.map((set, idx) => {
-    const p = set.passage;
-    const catLabel = p ? `${p.category || ''}/${p.subCategory || ''}` : '';
-    let section = `### 참고 ${idx + 1} [${catLabel}]\n`;
-
-    if (p && p.content) {
-      section += `[지문] ${p.content.substring(0, 2000)} [/지문]\n`;
-      if (p.title) section += `- 제목: ${p.title}\n`;
-      if (p.author) section += `- 작가: ${p.author}\n`;
-    }
-
-    section += formatReferenceQuestions(set.questions);
-    return section;
-  }).join('\n');
-
-  const categoriesStr = categories?.length ? categories.join(', ') : '전체';
-  const subCategoriesStr = subCategories?.length ? subCategories.join(', ') : '전체';
-  const patternsStr = questionPatterns?.length ? questionPatterns.join(', ') : '전체';
-  const userNotesLine = userNotes ? `- 추가 요청: ${userNotes}\n` : '';
-  const keywordLine = keyword ? `- 키워드/작품명: ${keyword} (반드시 이 키워드와 관련된 지문·작품을 사용하여 문제를 생성하세요)\n` : '';
-
-  return `당신은 대한민국 고등학교 국어 시험 출제 전문가입니다.
-아래 참고 자료는 실제 기출문제 DB에서 추출한 문항입니다.
-이 문항들의 출제 패턴, 지문 활용 방식, 선지 구성을 참고하여
-유사하지만 새로운 변형 문제를 생성해주세요.
-
-## 생성 조건
-- 영역: ${categoriesStr} / 세부: ${subCategoriesStr}
-- 문제 유형: ${patternsStr}
-- 난이도: ${difficulty} (${EXAM_DIFFICULTY_GUIDE[difficulty] || '기출 수준'})
-- 생성할 문항 수: ${count}개
-${keywordLine}${userNotesLine}
-## 참고 문항
-
-${referenceSections}
-
-## 출력 형식
-
-반드시 아래 형식과 태그를 정확히 지켜서 작성하세요:
-
-### 형식 A: 지문이 있는 문제 (여러 문제가 하나의 지문을 공유)
-
----
-### [시작번호~끝번호] 다음을 읽고 물음에 답하시오.
-
-[지문]
-(지문 내용을 작성합니다.
-여러 줄로 작성할 수 있습니다.)
-[/지문]
-
-### [번호]. (문제 질문 내용)
-
-① 선택지1
-② 선택지2
-③ 선택지3
-④ 선택지4
-⑤ 선택지5
-
-**정답**: ①
-**해설**: 해설 내용
-
-### [번호]. (문제 질문 내용)
-
-[보기]
-(이 문제에 보기가 필요한 경우 여기에 작성합니다.)
-[/보기]
-
-① 선택지1
-② 선택지2
-③ 선택지3
-④ 선택지4
-⑤ 선택지5
-
-**정답**: ③
-**해설**: 해설 내용
-
----
-
-### 형식 B: 지문 없는 독립 문제
-
----
-### [번호]. (문제 질문 내용)
-
-[보기]
-(보기가 필요한 경우에만 작성합니다.)
-[/보기]
-
-① 선택지1
-② 선택지2
-③ 선택지3
-④ 선택지4
-⑤ 선택지5
-
-**정답**: ②
-**해설**: 해설 내용
-
----
-
-## 주의사항
-- 참고 문항을 그대로 복사하지 말고 변형하세요
-- 지문은 참고 문항의 지문을 변형하거나 새로 작성하세요
-- 선택지는 매력적인 오답 포함, 정답은 명확하게
-- 해설에서 정답 근거와 오답 이유를 설명하세요
-- 수능/모의고사 출제 기준을 따르세요
-- 하나의 지문에서 여러 문제를 출제할 경우, 반드시 "[시작~끝] 다음을 읽고 물음에 답하시오." 형식의 범위 안내문을 사용하세요
-- 보기는 항상 해당 문제의 질문 아래에 배치하세요. 지문 바로 아래에 보기를 넣지 마세요
-- 각 문제에는 반드시 문항 번호(1, 2, 3...)를 붙이세요
-- 지문이 없는 문제(문법, 어휘 등)는 [지문] 태그 없이 바로 문항 번호와 질문으로 시작하세요
-- 서술형 문제는 선택지 대신 "서술하시오." 형태로 작성하세요
-- 보기가 없는 문제는 [보기] 태그를 사용하지 마세요`;
-}
-
-// ── 문학 전용 프롬프트 ──
+// ── 문학 전용 프롬프트 (HWP 추출 텍스트 기반) ──
 export interface LiteraturePromptOptions {
-  subCategories?: string[];
-  questionPatterns?: string[];
   title?: string;
   author?: string;
+  grade?: string;
+  publisher?: string;
   difficulty: string;
   count: number;
   userNotes?: string;
 }
 
 export function buildLiteratureQuestionPrompt(
-  passageSets: LiteraturePassageSet[],
+  contentTexts: string[],
   options: LiteraturePromptOptions
 ): string {
-  const { subCategories, questionPatterns, title, author, difficulty, count, userNotes } = options;
+  const { title, author, grade, publisher, difficulty, count, userNotes } = options;
 
-  const referenceSections = passageSets.map((set, idx) => {
-    const p = set.passage;
-    let section = `### 참고 ${idx + 1} [문학/${p.subCategory || ''}]\n`;
-    if (p.content) section += `[지문] ${p.content.substring(0, 2000)} [/지문]\n`;
-    if (p.title) section += `- 제목: ${p.title}\n`;
-    if (p.author) section += `- 작가: ${p.author}\n`;
-    section += formatReferenceQuestions(set.questions);
-    return section;
-  }).join('\n');
+  const referenceSections = contentTexts.map((text, idx) => {
+    return `### 참고 자료 ${idx + 1}\n\n${text}`;
+  }).join('\n\n');
 
-  const subCategoriesStr = subCategories?.length ? subCategories.join(', ') : '전체';
-  const patternsStr = questionPatterns?.length ? questionPatterns.join(', ') : '전체';
   const userNotesLine = userNotes ? `- 추가 요청: ${userNotes}\n` : '';
   const titleLine = title ? `- 작품명: ${title}\n` : '';
   const authorLine = author ? `- 작가명: ${author}\n` : '';
+  const gradeLine = grade ? `- 학년: ${grade}\n` : '';
+  const publisherLine = publisher ? `- 출판사: ${publisher}\n` : '';
 
   return `당신은 대한민국 고등학교 국어 시험 출제 전문가입니다.
-아래 참고 자료는 실제 기출문제 DB에서 추출한 문학 문항입니다.
-이 문항들의 출제 패턴, 지문 활용 방식, 선지 구성을 참고하여
+아래 참고 자료는 교과서/시험지에서 추출한 문학 관련 텍스트입니다.
+이 텍스트의 내용과 출제 패턴을 참고하여
 유사하지만 새로운 변형 문제를 생성해주세요.
 
 ## 생성 조건
-- 영역: 문학 / 세부: ${subCategoriesStr}
-- 문제 유형: ${patternsStr}
+- 영역: 문학
 - 난이도: ${difficulty} (${EXAM_DIFFICULTY_GUIDE[difficulty] || '기출 수준'})
 - 생성할 문항 수: ${count}개
-${titleLine}${authorLine}${userNotesLine}
-## 참고 문항
+${titleLine}${authorLine}${gradeLine}${publisherLine}${userNotesLine}
+## 참고 자료
 
 ${referenceSections}
 
-${COMMON_OUTPUT_FORMAT}`;
-}
-
-// ── 독서 전용 프롬프트 ──
-export interface ReadingPromptOptions {
-  subCategories?: string[];
-  questionPatterns?: string[];
-  keyword?: string;
-  difficulty: string;
-  count: number;
-  userNotes?: string;
-}
-
-export function buildReadingQuestionPrompt(
-  passageSets: ReadingPassageSet[],
-  options: ReadingPromptOptions
-): string {
-  const { subCategories, questionPatterns, keyword, difficulty, count, userNotes } = options;
-
-  const referenceSections = passageSets.map((set, idx) => {
-    const p = set.passage;
-    let section = `### 참고 ${idx + 1} [독서/${p.subCategory || ''}]\n`;
-    if (p.content) section += `[지문] ${p.content.substring(0, 2000)} [/지문]\n`;
-    if (p.keywords) section += `- 키워드: ${p.keywords}\n`;
-    section += formatReferenceQuestions(set.questions);
-    return section;
-  }).join('\n');
-
-  const subCategoriesStr = subCategories?.length ? subCategories.join(', ') : '전체';
-  const patternsStr = questionPatterns?.length ? questionPatterns.join(', ') : '전체';
-  const userNotesLine = userNotes ? `- 추가 요청: ${userNotes}\n` : '';
-  const keywordLine = keyword ? `- 키워드: ${keyword} (반드시 이 키워드와 관련된 지문을 사용하여 문제를 생성하세요)\n` : '';
-
-  return `당신은 대한민국 고등학교 국어 시험 출제 전문가입니다.
-아래 참고 자료는 실제 기출문제 DB에서 추출한 독서 문항입니다.
-이 문항들의 출제 패턴, 지문 활용 방식, 선지 구성을 참고하여
-유사하지만 새로운 변형 문제를 생성해주세요.
-
-## 생성 조건
-- 영역: 독서 / 세부: ${subCategoriesStr}
-- 문제 유형: ${patternsStr}
-- 난이도: ${difficulty} (${EXAM_DIFFICULTY_GUIDE[difficulty] || '기출 수준'})
-- 생성할 문항 수: ${count}개
-${keywordLine}${userNotesLine}
-## 참고 문항
-
-${referenceSections}
+## 작품 원문 보존 원칙 (필수)
+- 검색된 지문에 나오는 작품(시, 소설, 수필 등)의 내용을 절대 변경하지 마세요.
+- 작품은 참고 문항의 본문 그대로 사용하고, 문제만 변경하세요.
+- 새로운 작품을 창작하거나 기존 작품을 수정·각색하지 마세요.
+- 절대로 원문 그대로만 사용해야 합니다. 문제와 선택지, 해설만 변형하세요.
 
 ${COMMON_OUTPUT_FORMAT}`;
 }

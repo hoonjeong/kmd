@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/auth';
-import pool from '@edenschool/common/db';
+import pool from '@kaca/common/db';
 import type { RowDataPacket, ResultSetHeader } from 'mysql2';
 
 /** GET: 사용자 프로필 조회 */
@@ -11,7 +11,7 @@ export async function GET() {
   }
 
   const [rows] = await pool.execute<RowDataPacket[]>(
-    'SELECT id, name, email, phone, school_name FROM kaca.auth_user WHERE id = ?',
+    'SELECT id, name, email, phone, school_name FROM auth_user WHERE id = ?',
     [session.user.id]
   );
 
@@ -55,7 +55,7 @@ export async function PUT(req: NextRequest) {
   values.push(session.user.id);
 
   await pool.execute<ResultSetHeader>(
-    `UPDATE kaca.auth_user SET ${updates.join(', ')} WHERE id = ?`,
+    `UPDATE auth_user SET ${updates.join(', ')} WHERE id = ?`,
     values
   );
 

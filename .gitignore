@@ -2,6 +2,7 @@ node_modules
 .next
 dist
 .turbo
+.claude
 
 # 환경변수 (실제 값이 포함된 파일 - 절대 커밋 금지)
 .env
@@ -21,6 +22,8 @@ Thumbs.db
 
 # 데이터 파일
 data/
+ml/data/
+ml/models/
 
 # 임시 파일
 *.tmp

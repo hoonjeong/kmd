@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { sendSMS } from '@edenschool/common/sms';
+import { sendSMS } from '@kaca/common/sms';
 import { verifyMap } from '../phone-utils';
 
 export async function POST(req: Request) {

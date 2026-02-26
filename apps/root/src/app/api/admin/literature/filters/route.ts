@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAdminApiSession } from '@/lib/admin-session';
 import {
-  getDistinctLiteratureSubCategories,
-  getDistinctLiteratureQuestionPatterns,
-  countLiteratureByFilters,
-} from '@edenschool/common/queries/literature';
+  getDistinctLiteratureGrades,
+  getDistinctLiteraturePublishers,
+  getDistinctLiteratureAuthors,
+  countLiterature,
+} from '@kaca/common/queries/literature';
 
 export async function GET(req: NextRequest) {
   try {
@@ -15,20 +16,22 @@ export async function GET(req: NextRequest) {
 
   try {
     const sp = req.nextUrl.searchParams;
-    const subCategories = sp.get('subCategories')?.split(',').filter(Boolean) || undefined;
-    const questionPatterns = sp.get('questionPatterns')?.split(',').filter(Boolean) || undefined;
+    const grade = sp.get('grade') || undefined;
+    const publisher = sp.get('publisher') || undefined;
     const title = sp.get('title') || undefined;
     const author = sp.get('author') || undefined;
 
-    const [subCats, patterns, totalCount] = await Promise.all([
-      getDistinctLiteratureSubCategories(),
-      getDistinctLiteratureQuestionPatterns(subCategories),
-      countLiteratureByFilters({ title, author, subCategories, questionPatterns }),
+    const [grades, publishers, authors, totalCount] = await Promise.all([
+      getDistinctLiteratureGrades(),
+      getDistinctLiteraturePublishers(grade),
+      getDistinctLiteratureAuthors({ title, grade, publisher }),
+      countLiterature({ title, author, grade, publisher }),
     ]);
 
     return NextResponse.json({
-      subCategories: subCats,
-      questionPatterns: patterns,
+      grades,
+      publishers,
+      authors,
       totalCount,
     });
   } catch (err) {

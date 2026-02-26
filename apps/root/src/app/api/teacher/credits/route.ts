@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { auth } from '@/auth';
-import pool from '@edenschool/common/db';
+import pool from '@kaca/common/db';
 import type { RowDataPacket } from 'mysql2';
 
 export async function GET() {
@@ -10,7 +10,7 @@ export async function GET() {
   }
 
   const [rows] = await pool.execute<RowDataPacket[]>(
-    'SELECT credits FROM kaca.user_credits WHERE user_id = ?',
+    'SELECT credits FROM user_credits WHERE user_id = ?',
     [session.user.id]
   );
 

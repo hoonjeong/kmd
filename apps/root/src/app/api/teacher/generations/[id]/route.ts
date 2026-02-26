@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/auth';
-import pool from '@edenschool/common/db';
+import pool from '@kaca/common/db';
 import type { RowDataPacket } from 'mysql2';
 
 /** GET: 단건 상세 조회 (generated_text 포함) */
@@ -18,7 +18,7 @@ export async function GET(
   const [rows] = await pool.execute<RowDataPacket[]>(
     `SELECT id, category, title, generated_text, request_params, difficulty,
             question_count, template, hwpx_blob IS NOT NULL AS has_hwpx, created_at
-     FROM kaca.generation_history
+     FROM generation_history
      WHERE id = ? AND user_id = ?`,
     [id, session.user.id]
   );

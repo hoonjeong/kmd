@@ -11,7 +11,7 @@
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.74.0",
-    "@edenschool/common": "workspace:*",
+    "@kaca/common": "workspace:*",
     "bcryptjs": "^3.0.3",
     "bootstrap": "4.4.1",
     "cfb": "^1.2.2",

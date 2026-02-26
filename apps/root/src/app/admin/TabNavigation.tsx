@@ -5,7 +5,6 @@ import { useRouter, useSearchParams } from 'next/navigation';
 const TABS = [
   { key: 'literature', label: '문학' },
   { key: 'grammar', label: '문법' },
-  { key: 'reading', label: '독서' },
 ] as const;
 
 export type TabKey = (typeof TABS)[number]['key'];

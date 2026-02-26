@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAdminApiSession } from '@/lib/admin-session';
-import { selectGrammarFileContent } from '@edenschool/common/queries/grammar';
+import { selectGrammarFileContent } from '@kaca/common/queries/grammar';
 
 export async function GET(req: NextRequest) {
   try {

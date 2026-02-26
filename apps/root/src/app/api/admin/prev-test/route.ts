@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import pool from '@edenschool/common/db';
+import pool from '@kaca/common/db';
 import { requireAdminApiSession } from '@/lib/admin-session';
 import { withErrorHandler } from '@/lib/api-handler';
 import { RowDataPacket, ResultSetHeader } from 'mysql2';
@@ -12,7 +12,7 @@ import {
   selectPrevTestMetaInfoById,
   selectPrevTestFileInfoByInfoId,
   selectPrevTestByYear,
-} from '@edenschool/common/queries/prev-test';
+} from '@kaca/common/queries/prev-test';
 
 export const POST = withErrorHandler(async (req: NextRequest) => {
   const session = await requireAdminApiSession();

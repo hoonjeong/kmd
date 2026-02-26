@@ -1,7 +1,7 @@
 import type { NextConfig } from 'next';
 
 const nextConfig: NextConfig = {
-  transpilePackages: ['@edenschool/common'],
+  transpilePackages: ['@kaca/common'],
   serverExternalPackages: ['pdf-parse', 'cfb'],
   experimental: {
     serverActions: {

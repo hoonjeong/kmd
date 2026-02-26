@@ -1,66 +1,62 @@
 import pool from '../db';
-import type { GrammarFileMeta, GrammarFileContent } from '../types';
+import type { GrammarMeta, GrammarFile } from '../types';
 import type { RowDataPacket } from 'mysql2';
+import { getDistinctValues, selectFileContent } from './meta-helpers';
 
-const SPLIT_FILE_META = 'kaca.split_file_meta_info';
-const SPLIT_FILE_CONTENT = 'kaca.split_file_content';
+// ── sub_category LIKE 검색 ──
+export async function searchGrammarBySubCategory(
+  subCategory: string,
+  grade?: string,
+  publisher?: string,
+  limit = 20,
+  offset = 0
+): Promise<GrammarMeta[]> {
+  let sql = `SELECT id, grade, publisher, category, sub_category as subCategory,
+                    insert_time as insertTime
+             FROM grammar_meta WHERE sub_category LIKE ?`;
+  const params: (string | number)[] = ['%' + subCategory + '%'];
 
-// ── 키워드 검색 ──
-export async function searchGrammarFiles(keyword: string, limit = 20, offset = 0): Promise<GrammarFileMeta[]> {
-  const [rows] = await pool.query<RowDataPacket[]>(
-    `SELECT id, grade, subject, publisher, search_keyword as searchKeyword,
-            school_name as schoolName, year, term, test_type as testType,
-            file_type as fileType, insert_time as insertTime
-     FROM ${SPLIT_FILE_META}
-     WHERE search_keyword LIKE ?
-     ORDER BY id DESC LIMIT ? OFFSET ?`,
-    ['%' + keyword + '%', limit, offset]
-  );
-  return rows as GrammarFileMeta[];
+  if (grade) { sql += ' AND grade = ?'; params.push(grade); }
+  if (publisher) { sql += ' AND publisher = ?'; params.push(publisher); }
+
+  sql += ' ORDER BY id DESC LIMIT ? OFFSET ?';
+  params.push(limit, offset);
+
+  const [rows] = await pool.query<RowDataPacket[]>(sql, params);
+  return rows as GrammarMeta[];
 }
 
 // ── 검색 결과 카운트 ──
-export async function countGrammarFiles(keyword?: string): Promise<number> {
-  let sql = `SELECT COUNT(*) as total FROM ${SPLIT_FILE_META}`;
+export async function countGrammarBySubCategory(
+  subCategory?: string,
+  grade?: string,
+  publisher?: string
+): Promise<number> {
+  let sql = 'SELECT COUNT(id) as total FROM grammar_meta';
   const params: string[] = [];
+  const wheres: string[] = [];
 
-  if (keyword) {
-    sql += ' WHERE search_keyword LIKE ?';
-    params.push('%' + keyword + '%');
-  }
+  if (subCategory) { wheres.push('sub_category LIKE ?'); params.push('%' + subCategory + '%'); }
+  if (grade) { wheres.push('grade = ?'); params.push(grade); }
+  if (publisher) { wheres.push('publisher = ?'); params.push(publisher); }
+
+  if (wheres.length > 0) sql += ' WHERE ' + wheres.join(' AND ');
 
   const [rows] = await pool.query<RowDataPacket[]>(sql, params);
   return (rows[0] as { total: number }).total;
 }
 
-// ── 단일 파일 콘텐츠 조회 ──
-export async function selectGrammarFileContent(metaId: number): Promise<GrammarFileContent | null> {
-  const [rows] = await pool.query<RowDataPacket[]>(
-    `SELECT id, meta_id as metaId, file_name as fileName, content, insert_time as insertTime
-     FROM ${SPLIT_FILE_CONTENT}
-     WHERE meta_id = ? LIMIT 1`,
-    [metaId]
-  );
-  if (rows.length === 0) return null;
-  const row = rows[0] as GrammarFileContent;
-  // content는 longblob이므로 Buffer → string 변환
-  if (row.content && Buffer.isBuffer(row.content)) {
-    row.content = row.content.toString('utf8');
-  }
-  return row;
+// ── 파일 내용 조회 ──
+export async function selectGrammarFileContent(metaId: number): Promise<GrammarFile | null> {
+  return selectFileContent<GrammarFile>('grammar_file', metaId);
 }
 
-// ── 여러 파일 메타 조회 ──
-export async function selectGrammarFilesByIds(ids: number[]): Promise<GrammarFileMeta[]> {
-  if (ids.length === 0) return [];
-  const [rows] = await pool.query<RowDataPacket[]>(
-    `SELECT id, grade, subject, publisher, search_keyword as searchKeyword,
-            school_name as schoolName, year, term, test_type as testType,
-            file_type as fileType, insert_time as insertTime
-     FROM ${SPLIT_FILE_META}
-     WHERE id IN (${ids.map(() => '?').join(',')})
-     ORDER BY id DESC`,
-    ids
-  );
-  return rows as GrammarFileMeta[];
+// ── 학년 목록 ──
+export async function getDistinctGrammarGrades(): Promise<string[]> {
+  return getDistinctValues('grammar_meta', 'grade');
+}
+
+// ── 출판사 목록 ──
+export async function getDistinctGrammarPublishers(grade?: string): Promise<string[]> {
+  return getDistinctValues('grammar_meta', 'publisher', { grade });
 }

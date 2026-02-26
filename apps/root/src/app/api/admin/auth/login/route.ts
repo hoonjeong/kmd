@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import bcrypt from 'bcryptjs';
 import { getAdminSession } from '@/lib/admin-session';
-import { selectAdminUserByEmail } from '@edenschool/common/queries/admin-user';
+import { selectAdminUserByEmail } from '@kaca/common/queries/admin-user';
 
 export async function POST(req: NextRequest) {
   const formData = await req.formData();
@@ -18,11 +18,16 @@ export async function POST(req: NextRequest) {
   }
 
   const user = await selectAdminUserByEmail(email);
-  if (!user) {
+  if (!user || !user.passwordHash) {
     return NextResponse.redirect(new URL('/admin/login?error=1', baseUrl));
   }
 
-  const match = await bcrypt.compare(pw, user.pw);
+  // admin role만 관리자 로그인 허용
+  if (user.role !== 'admin') {
+    return NextResponse.redirect(new URL('/admin/login?error=1', baseUrl));
+  }
+
+  const match = await bcrypt.compare(pw, user.passwordHash);
   if (!match) {
     return NextResponse.redirect(new URL('/admin/login?error=1', baseUrl));
   }
@@ -32,8 +37,9 @@ export async function POST(req: NextRequest) {
     id: user.id,
     name: user.name,
     email: user.email,
-    phone: user.phone,
-    code: user.code,
+    phone: user.phone || '',
+    code: '',
+    role: user.role,
   };
   await session.save();
 

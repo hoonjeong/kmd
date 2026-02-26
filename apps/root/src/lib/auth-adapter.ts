@@ -1,6 +1,6 @@
 import { randomUUID } from 'crypto';
 import type { Adapter, AdapterUser, AdapterAccount } from 'next-auth/adapters';
-import pool from '@edenschool/common/db';
+import pool from '@kaca/common/db';
 import type { RowDataPacket } from 'mysql2';
 
 interface UserRow extends RowDataPacket {
@@ -29,7 +29,7 @@ export function MySQLAdapter(): Adapter {
     async createUser(user) {
       const id = randomUUID();
       await pool.execute(
-        `INSERT INTO kaca.auth_user (id, name, email, email_verified, image)
+        `INSERT INTO auth_user (id, name, email, email_verified, image)
          VALUES (?, ?, ?, ?, ?)`,
         [id, user.name ?? null, user.email, user.emailVerified ?? null, user.image ?? null]
       );
@@ -38,7 +38,7 @@ export function MySQLAdapter(): Adapter {
 
     async getUser(id) {
       const [rows] = await pool.execute<UserRow[]>(
-        'SELECT * FROM kaca.auth_user WHERE id = ?',
+        'SELECT * FROM auth_user WHERE id = ?',
         [id]
       );
       return rows[0] ? toAdapterUser(rows[0]) : null;
@@ -46,7 +46,7 @@ export function MySQLAdapter(): Adapter {
 
     async getUserByEmail(email) {
       const [rows] = await pool.execute<UserRow[]>(
-        'SELECT * FROM kaca.auth_user WHERE email = ?',
+        'SELECT * FROM auth_user WHERE email = ?',
         [email]
       );
       return rows[0] ? toAdapterUser(rows[0]) : null;
@@ -54,8 +54,8 @@ export function MySQLAdapter(): Adapter {
 
     async getUserByAccount({ provider, providerAccountId }) {
       const [rows] = await pool.execute<UserRow[]>(
-        `SELECT u.* FROM kaca.auth_user u
-         JOIN kaca.auth_account a ON u.id = a.user_id
+        `SELECT u.* FROM auth_user u
+         JOIN auth_account a ON u.id = a.user_id
          WHERE a.provider = ? AND a.provider_account_id = ?`,
         [provider, providerAccountId]
       );
@@ -73,11 +73,11 @@ export function MySQLAdapter(): Adapter {
 
       values.push(user.id);
       await pool.execute(
-        `UPDATE kaca.auth_user SET ${fields.join(', ')} WHERE id = ?`,
+        `UPDATE auth_user SET ${fields.join(', ')} WHERE id = ?`,
         values
       );
       const [rows] = await pool.execute<UserRow[]>(
-        'SELECT * FROM kaca.auth_user WHERE id = ?',
+        'SELECT * FROM auth_user WHERE id = ?',
         [user.id]
       );
       return toAdapterUser(rows[0]);
@@ -86,7 +86,7 @@ export function MySQLAdapter(): Adapter {
     async linkAccount(account) {
       const id = randomUUID();
       await pool.execute(
-        `INSERT INTO kaca.auth_account
+        `INSERT INTO auth_account
          (id, user_id, type, provider, provider_account_id, refresh_token, access_token, expires_at, token_type, scope, id_token)
          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
@@ -108,7 +108,7 @@ export function MySQLAdapter(): Adapter {
 
     async unlinkAccount({ provider, providerAccountId }) {
       await pool.execute(
-        'DELETE FROM kaca.auth_account WHERE provider = ? AND provider_account_id = ?',
+        'DELETE FROM auth_account WHERE provider = ? AND provider_account_id = ?',
         [provider, providerAccountId]
       );
     },

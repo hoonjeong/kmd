@@ -1,21 +1,11 @@
 import { Suspense } from 'react';
 import { requireAdminSession } from '@/lib/admin-session';
-import {
-  getDistinctLiteratureSubCategories,
-  getDistinctLiteratureQuestionPatterns,
-  countLiteratureByFilters,
-} from '@edenschool/common/queries/literature';
-import {
-  getDistinctReadingSubCategories,
-  getDistinctReadingQuestionPatterns,
-  countReadingByFilters,
-} from '@edenschool/common/queries/reading';
-import { countGrammarFiles } from '@edenschool/common/queries/grammar';
+import { countGrammarBySubCategory } from '@kaca/common/queries/grammar';
+import { countLiterature } from '@kaca/common/queries/literature';
 import TabNavigation from './TabNavigation';
 import type { TabKey } from './TabNavigation';
 import LiteratureClient from './LiteratureClient';
 import GrammarClient from './GrammarClient';
-import ReadingClient from './ReadingClient';
 
 interface Props {
   searchParams: Promise<{ tab?: string }>;
@@ -52,52 +42,28 @@ export default async function AdminPage({ searchParams }: Props) {
       <Suspense fallback={<div style={{ padding: 40, textAlign: 'center', color: '#94a3b8' }}>로딩 중...</div>}>
         {tab === 'literature' && <LiteratureTab userName={session.user.name} />}
         {tab === 'grammar' && <GrammarTab userName={session.user.name} />}
-        {tab === 'reading' && <ReadingTab userName={session.user.name} />}
       </Suspense>
     </div>
   );
 }
 
 async function LiteratureTab({ userName }: { userName: string }) {
-  const [subCategories, questionPatterns, totalCount] = await Promise.all([
-    getDistinctLiteratureSubCategories(),
-    getDistinctLiteratureQuestionPatterns(),
-    countLiteratureByFilters({}),
-  ]);
+  const totalCount = await countLiterature({});
 
   return (
     <LiteratureClient
       userName={userName}
-      initialSubCategories={subCategories}
-      initialQuestionPatterns={questionPatterns}
       initialTotalCount={totalCount}
     />
   );
 }
 
 async function GrammarTab({ userName }: { userName: string }) {
-  const totalCount = await countGrammarFiles();
+  const totalCount = await countGrammarBySubCategory();
 
   return (
     <GrammarClient
       userName={userName}
-      initialTotalCount={totalCount}
-    />
-  );
-}
-
-async function ReadingTab({ userName }: { userName: string }) {
-  const [subCategories, questionPatterns, totalCount] = await Promise.all([
-    getDistinctReadingSubCategories(),
-    getDistinctReadingQuestionPatterns(),
-    countReadingByFilters({}),
-  ]);
-
-  return (
-    <ReadingClient
-      userName={userName}
-      initialSubCategories={subCategories}
-      initialQuestionPatterns={questionPatterns}
       initialTotalCount={totalCount}
     />
   );

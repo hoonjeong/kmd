@@ -1,4 +1,4 @@
-import pool from '@edenschool/common/db';
+import pool from '@kaca/common/db';
 import type { ResultSetHeader, RowDataPacket } from 'mysql2';
 
 /**
@@ -15,7 +15,7 @@ export async function deductCredits(
     await conn.beginTransaction();
 
     const [result] = await conn.execute<ResultSetHeader>(
-      'UPDATE kaca.user_credits SET credits = credits - ? WHERE user_id = ? AND credits >= ?',
+      'UPDATE user_credits SET credits = credits - ? WHERE user_id = ? AND credits >= ?',
       [count, userId, count]
     );
 
@@ -26,14 +26,14 @@ export async function deductCredits(
 
     // 차감 후 잔액 조회
     const [rows] = await conn.execute<RowDataPacket[]>(
-      'SELECT credits FROM kaca.user_credits WHERE user_id = ?',
+      'SELECT credits FROM user_credits WHERE user_id = ?',
       [userId]
     );
     const balanceAfter = rows[0]?.credits ?? 0;
 
     // credit_log에 기록
     await conn.execute(
-      'INSERT INTO kaca.credit_log (user_id, type, amount, balance_after, description) VALUES (?, ?, ?, ?, ?)',
+      'INSERT INTO credit_log (user_id, type, amount, balance_after, description) VALUES (?, ?, ?, ?, ?)',
       [userId, 'deduct', count, balanceAfter, description || null]
     );
 

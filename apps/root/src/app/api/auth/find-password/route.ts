@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { hash } from 'bcryptjs';
-import pool from '@edenschool/common/db';
-import { sendSMS } from '@edenschool/common/sms';
+import pool from '@kaca/common/db';
+import { sendSMS } from '@kaca/common/sms';
 import { verifyMap, createPhoneToken, verifyPhoneToken } from '../phone-utils';
 import type { RowDataPacket } from 'mysql2';
 
@@ -20,7 +20,7 @@ export async function POST(req: Request) {
 
       // Verify email + phone match
       const [rows] = await pool.execute<RowDataPacket[]>(
-        'SELECT id FROM kaca.auth_user WHERE email = ? AND phone = ? LIMIT 1',
+        'SELECT id FROM auth_user WHERE email = ? AND phone = ? LIMIT 1',
         [email, normalized]
       );
 
@@ -88,7 +88,7 @@ export async function POST(req: Request) {
       const passwordHash = await hash(newPassword, 12);
 
       const [result] = await pool.execute(
-        'UPDATE kaca.auth_user SET password_hash = ? WHERE email = ? AND phone = ?',
+        'UPDATE auth_user SET password_hash = ? WHERE email = ? AND phone = ?',
         [passwordHash, email, normalized]
       );
 

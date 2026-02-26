@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { randomUUID } from 'crypto';
 import { hash } from 'bcryptjs';
-import pool from '@edenschool/common/db';
+import pool from '@kaca/common/db';
 import { verifyPhoneToken } from '../phone-utils';
 import type { RowDataPacket } from 'mysql2';
 
@@ -35,7 +35,7 @@ export async function POST(req: Request) {
 
     // 이메일 중복 체크
     const [existing] = await pool.execute<RowDataPacket[]>(
-      'SELECT id FROM kaca.auth_user WHERE email = ?',
+      'SELECT id FROM auth_user WHERE email = ?',
       [email]
     );
     if (existing.length > 0) {
@@ -53,17 +53,17 @@ export async function POST(req: Request) {
     try {
       await conn.beginTransaction();
       await conn.execute(
-        `INSERT INTO kaca.auth_user (id, name, email, password_hash, phone, school_name, role)
+        `INSERT INTO auth_user (id, name, email, password_hash, phone, school_name, role)
          VALUES (?, ?, ?, ?, ?, ?, 'user')`,
         [id, name, email, passwordHash, phone.replace(/-/g, ''), schoolName || null]
       );
       const initialCredits = 100;
       await conn.execute(
-        `INSERT INTO kaca.user_credits (user_id, credits) VALUES (?, ?)`,
+        `INSERT INTO user_credits (user_id, credits) VALUES (?, ?)`,
         [id, initialCredits]
       );
       await conn.execute(
-        `INSERT INTO kaca.credit_log (user_id, type, amount, balance_after, description) VALUES (?, 'charge', ?, ?, ?)`,
+        `INSERT INTO credit_log (user_id, type, amount, balance_after, description) VALUES (?, 'charge', ?, ?, ?)`,
         [id, initialCredits, initialCredits, '회원가입 감사 이벤트']
       );
       await conn.commit();
